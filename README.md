@@ -44,7 +44,6 @@ flowchart LR
   <img src="docs/screens/01-grid.png" alt="후기 그리드" width="200">
   <img src="docs/screens/02-detail.png" alt="후기 상세" width="200">
   <img src="docs/screens/03-quote.png" alt="견적 신청 폼" width="200">
-  <img src="docs/screens/04-done.png" alt="접수 완료" width="200">
 </p>
 
 주로 인스타그램 프로필 링크, 카카오톡 상담 답장, 명함 QR코드를 통해 접속합니다. 견적 신청은 1~2분이면 끝나며, 접수 후 담당자가 순차적으로 연락드립니다.
