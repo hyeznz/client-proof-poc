@@ -43,3 +43,6 @@ next-env.d.ts
 
 # 로컬 작업용 스크립트
 scripts/extract_reviews.py
+
+# Claude Code 개인 설정
+.claude/
