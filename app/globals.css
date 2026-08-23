@@ -1,0 +1,1213 @@
+/* ===== KBL 점프체 (한국프로농구연맹 공식 서체, 상업적 사용 가능) =====
+   Extended → 메인 히어로 타이틀 / Bold → 필터 탭 / Condensed → 카드 제목
+   v07: base64 인라인(600KB) 대신 public/fonts 파일 로드 */
+@font-face { font-family: 'KBLJump';          src: url('/fonts/KBLJump_B.woff2') format('woff2');            font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'KBLJumpExtended';  src: url('/fonts/KBLJump_EB_Extended.woff2') format('woff2');  font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'KBLJumpCondensed'; src: url('/fonts/KBLJump_EB_Condensed.woff2') format('woff2'); font-weight: 800; font-style: normal; font-display: swap; }
+
+  :root {
+    /* ===== 새 팔레트 (4색 시스템) =====
+       카드색과 글자색의 페어링 규칙:
+       - black(#171717)  카드 → orange(#FE5F15) 글자
+       - orange(#FE5F15) 카드 → black(#171717) 글자
+       - dark gray(#4D4D4D)  카드 → light gray(#DEDEDE) 글자
+       - light gray(#DEDEDE) 카드 → dark gray(#4D4D4D) 글자
+    */
+    --black: #171717;       /* 살짝 따뜻한 다크 */
+    --orange: #FE5F15;      /* 비비드 오렌지 */
+    --dark-gray: #4D4D4D;   /* 다크 그레이 */
+    --light-gray: #DEDEDE;  /* 라이트 그레이 */
+
+    /* 배경 = 레퍼런스 이미지의 실제 배경 픽셀값 (#F6F7F9, 아주 연한 쿨 그레이) */
+    --bg: #F6F7F9;
+
+    /* 텍스트 계조용 (dark-gray 기반) */
+    --ink-80: rgba(77,77,77,0.85);
+    --ink-60: rgba(77,77,77,0.65);
+    --ink-40: rgba(77,77,77,0.4);
+    --ink-10: rgba(77,77,77,0.15);
+
+    /* 통일된 타이포 — 카드 크기별 차등 없음, 모바일 기준 */
+    --text-micro: 11px;     /* 좌상단 작은 키워드 */
+    --text-xs: 11px;
+    --text-sm: 13px;
+    --text-keyword: 26px;   /* 모바일 좁은 카드에서 wrap 방지 위해 축소 */
+
+    /* 카드 높이 단위 */
+    --row-unit: 40px;
+    --gap: 8px;
+    --radius: 14px;      /* 카드 모서리 둥글게 */
+    /* 카드 내부 여백 — 뷰포트 비례 축소.
+       - ≥375px(일반 모바일): 18px
+       - 좁은 화면: 5vw 비례 (예: 280→14, 240→12, 200→10)
+       - 하한 9px: 너무 빽빽해지지 않게 */
+    --pad: clamp(9px, 4.8vw, 18px);
+    /* 화면 좌우 공통 패딩 — safe-area-inset(아이폰 노치) 포함 */
+    --edge: calc(16px + env(safe-area-inset-left));
+
+    /* ===== 폰트 스택 (한 곳에서 관리) =====
+       CDN의 Pretendard Variable을 최우선, 로컬 Pretendard, 시스템 폰트 순으로 fallback.
+       다른 폰트로 바꾸려면:
+         1) 상단 <link>의 CDN URL 교체
+         2) 아래 --font-sans 값의 첫 항목(폰트 이름)을 새 폰트 이름으로 교체
+    */
+    --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+    /* 포인트용 — 메인 타이틀, 카드 키워드에만 사용
+       (본문에 쓰면 가독성 떨어짐, 임팩트 있는 위치에만) */
+    --font-display: 'KBLJump', var(--font-sans);
+    /* 히어로 타이틀용 — Condensed EB(세로로 눌러 좁힌 점프체)
+       긴 3줄 카피를 좁은 화면에서도 한 줄씩 담아내기 위해 Condensed로 전환 */
+    --font-display-hero: 'KBLJumpCondensed', 'KBLJump', var(--font-sans);
+    /* 카드 제목용 — Condensed EB로 통일 (메인 히어로와 동일 굵기) */
+    --font-display-card: 'KBLJumpCondensed', 'KBLJump', var(--font-sans);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--black);
+    line-height: 1.3;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    word-break: keep-all;
+    overflow-x: hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    /* safe-area 좌우 패딩은 body에 걸지 않음 (자식 섹션의 --edge에서 일괄 처리) */
+    font-feature-settings: "ss18", "ss19", "tnum";  /* 한글 미세조정 + 숫자 고정폭 */
+    text-rendering: optimizeLegibility;
+    /* PC 휠 스크롤이 걸리지 않도록 명시적으로 auto 유지 */
+    overflow-y: auto;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* 메타·넘버 텍스트: Pretendard 기반 + 탭ular 숫자 + 미세 letter-spacing으로 모노 느낌 */
+  .mono {
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum", "ss04";
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ============ 상단 룰 라인 ============ */
+  .topline {
+    height: 1px;
+    background: var(--black);
+    margin: 0 var(--edge);
+    max-width: 1280px;
+  }
+  .topline-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 var(--edge);
+  }
+  .topline-wrap .topline { margin: 0; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 10px var(--edge) 16px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .header-logo {
+    width: 30px; height: 30px;
+    background: var(--black);
+    color: var(--light-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans);
+    font-weight: 800;
+    font-size: 14px;
+    border-radius: 50%;
+    letter-spacing: -0.02em;
+  }
+
+  /* ============ 거대 타이틀 블록 ============ */
+  .title-block {
+    max-width: 1280px;
+    /* 상단 여유 패딩 — 헤더 제거에 따른 시각적 여백 확보
+       + 큰 Korean 글리프의 위쪽 어센더가 잘리지 않도록 상단 버퍼 */
+    margin: 20px auto 0;
+    padding: 0 var(--edge) 4px;
+    /* overflow 규칙 제거: JS 피팅이 정확하므로 안전장치 불필요.
+       overflow:hidden이 있으면 큰 글자의 윗부분(어센더)이 잘려 나감. */
+  }
+  .main-title {
+    font-family: var(--font-display-hero);
+    font-weight: 700;
+    /* flex-column + align-items:flex-start
+       → 각 .mt-line 이 자기 텍스트의 "자연 폭"만큼만 차지하는 flex 아이템이 됨.
+         이게 핵심: 일반 block이면 짧은 텍스트도 부모 폭을 꽉 채워서
+         JS가 offsetWidth/scrollWidth로 실제 텍스트 폭을 측정 못 함.
+         flex-item with align-items:flex-start → 폭 = 콘텐츠 폭 → 측정 정확. */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: clamp(22px, 8.6vw, 66px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;     /* 점프체는 각진 서체라 트래킹 살짝 완화 */
+    color: var(--black);
+    max-width: 100%;
+  }
+  /* 각 줄 — flex 아이템으로 자기 콘텐츠 폭만큼만 차지.
+     line-height 1.0 = 타이트 빡빡, 1.3~1.5 = 본문 스타일.
+     디스플레이 타이틀은 1.12~1.18이 숨통 트이면서 답답하지 않은 스위트스팟. */
+  .main-title .mt-line {
+    white-space: nowrap;
+    line-height: 1.15;
+  }
+  /* 짧은 줄 전용 미세 조정 (예: "흔치 않아요")
+     - word-spacing 음수: letter-spacing 확장 시 단어 사이(공백) 간격이
+       char-to-char 간격의 4~5배로 과도해지는 것을 시각적으로 상쇄
+     - padding-left: 다른 줄의 따옴표 side-bearing 때문에 생기는
+       시각적 들여쓰기에 맞추어 첫 글자를 살짝 오른쪽으로 정렬
+     - padding은 em 기반이라 폰트 크기에 비례해 자동 스케일 */
+  .main-title .mt-line--tight {
+    word-spacing: -0.1em;
+    padding-left: 0.04em;
+  }
+  /* 메인 타이틀 속 따옴표 강조 키워드 — 오렌지 포인트로 시선 유도 */
+  .main-title .mt-hi {
+    color: var(--orange);
+  }
+
+  /* ============ 오렌지 배너 ============ */
+  .banner {
+    max-width: 1280px;
+    margin: 14px auto 0;
+    padding: 0 var(--edge);
+  }
+  .banner-inner {
+    background: var(--orange);
+    color: var(--black);
+    padding: 16px 18px;
+    font-family: var(--font-sans);
+    word-break: keep-all;
+  }
+  .banner-headline {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.35;
+    margin-bottom: 10px;
+  }
+  .banner-body {
+    font-size: 14.5px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.7;
+    text-align: center;        /* 중앙 정렬 */
+    text-wrap: balance;        /* v04w34 — 각 줄 길이 균등 분배해 시각적 정돈 (지원 브라우저) */
+  }
+  .banner-body strong {
+    font-weight: 800;
+  }
+  .banner-body .banner-emphasis {
+    display: inline-block;
+    margin-top: 2px;
+    font-size: 1.7em;
+    line-height: 1.2;
+  }
+  /* v04w31 — 모바일 전용 줄바꿈. PC에선 가려서 자연 wrap에 맡김 */
+  .banner-body br.m-only { display: inline; }
+  @media (min-width: 768px) {
+    .banner-inner {
+      padding: 20px 24px;
+    }
+    .banner-headline {
+      font-size: 17px;
+      margin-bottom: 12px;
+    }
+    .banner-body {
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    .banner-body br.m-only { display: none; }
+  }
+
+
+  /* ============ 콜아웃 오렌지 박스 모션 (v07) ============
+     챕터(문단 묶음)별: 구간이 i × stagger 간격으로 페이드업 → hold 동안 정지 →
+     컨테이너 페이드아웃 → onAnimationEnd에서 다음 챕터 → 반복.
+     컨테이너 길이 = count×stagger + in + hold + out (JS가 --co-count 주입) */
+  .co-stack { display: grid; align-items: center; } /* 짧은 챕터도 세로 가운데 */
+  .co-stack > .co-body { grid-area: 1 / 1; }      /* 챕터 겹치기 → 높이 = 가장 긴 챕터 */
+  .co-hidden { visibility: hidden; }
+  .co-body {
+    --co-stagger: 0.32s;   /* 구간 간 지연 */
+    --co-in: 0.9s;         /* 구간 등장 시간 (마스크 리빌은 조금 길게) */
+    --co-hold: 2.5s;       /* 완성 후 읽는 시간 */
+    --co-out: 0.5s;        /* 페이드아웃 */
+    --co-total: calc(var(--co-count) * var(--co-stagger) + var(--co-in) + var(--co-hold) + var(--co-out));
+    /* 옴니고딕 Light 대체 — Pretendard 얇은 굵기 (옴니고딕은 유료) */
+    font-family: var(--font-sans);
+    font-size: 1.2em;
+    line-height: 1.35;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+  .co-body strong { font-weight: 800; }
+  /* 마스크 리빌: 줄마다 overflow:hidden 칸막이 안에서 글자가 밀려 올라옴 */
+  .co-seg { display: block; margin-top: 0.1em; overflow: hidden; padding: 0.06em 0; }
+  .co-seg:first-child { margin-top: 0; }
+  .co-seg.co-para { margin-top: 0.9em; }  /* 문단 사이 간격 */
+  .co-seg > .co-inner { display: inline-block; }
+  .co-body:not(.co-play) .co-inner { opacity: 0; }
+  .co-play .co-inner {
+    opacity: 0;
+    animation: co-seg-in var(--co-in) cubic-bezier(0.16, 1, 0.3, 1) both; /* expo-out */
+    animation-delay: calc(var(--i) * var(--co-stagger));
+  }
+  .co-play { animation: co-body-cycle var(--co-total) linear both; }
+  @keyframes co-seg-in {
+    from { opacity: 0; transform: translateY(110%); filter: blur(6px); }
+    60%  { opacity: 1; filter: blur(0); }
+    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+  /* 끝 8%를 페이드아웃으로 근사 (퍼센트 키프레임이라 --co-out 정확 매핑 불가) */
+  @keyframes co-body-cycle {
+    0%, 92% { opacity: 1; }
+    100%    { opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* 모션 없음: 두 챕터를 위아래로 정적 표시 */
+    .co-inner, .co-play { animation: none !important; opacity: 1 !important; }
+    .co-stack { display: block; }
+    .co-hidden { visibility: visible; margin-top: 0.8em; }
+  }
+  @media (min-width: 768px) {
+    .co-body { font-size: 1.25em; }
+  }
+
+  /* ============ 필터 바 (언더라인 탭 — 가로 스크롤) ============
+     비유: 책갈피 형식. 글자만 있고 선택된 것 아래로 언더라인이 슬라이드.
+     - 스크롤바 숨김
+     - 좌우 끝 페이드 마스크 (더 있음을 암시)
+     - 선택 시 탭이 화면 중앙으로 자동 스크롤 */
+  .filter-bar {
+    position: relative;
+    max-width: 1280px;
+    margin: 22px auto 10px;
+    /* 마스크가 자연스럽게 보이도록 필터바 자체는 edge 패딩 X
+       (스크롤 컨테이너 내부 패딩으로 edge 확보) */
+  }
+  /* 좌우 끝 페이드 마스크 — 콘텐츠가 자연스럽게 사라지는 효과 */
+  .filter-bar::before,
+  .filter-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .filter-bar::before {
+    left: 0;
+    background: linear-gradient(to right, var(--bg), transparent);
+  }
+  .filter-bar::after {
+    right: 0;
+    background: linear-gradient(to left, var(--bg), transparent);
+  }
+
+  .type-chips {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    /* 좌우 안쪽 패딩: edge 만큼 (첫/마지막 탭이 화면 가장자리에 붙지 않음) */
+    padding: 0 var(--edge) 2px;
+    /* 스크롤바 숨김 */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* 언더라인이 하단 절대 위치로 그려지도록 relative */
+    position: relative;
+  }
+  .type-chips::-webkit-scrollbar { display: none; }
+
+  .chip {
+    flex: 0 0 auto;
+    padding: 10px 6px;              /* 14px → 6px : 좌우 간격 확 좁힘 */
+    background: transparent;
+    border: 0;
+    font-family: var(--font-display); /* Pretendard → KBL점프체 */
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink-40);           /* 비선택: 흐린 회색 */
+    cursor: pointer;
+    transition: color .18s ease;
+    white-space: nowrap;
+    letter-spacing: -0.02em;
+    text-align: center;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    /* 언더라인 위치 계산의 기준점 — 칩 내부에 글자 span을 담음 */
+  }
+  /* 칩 내부의 글자 부분만 감싸는 span
+     언더라인이 글자 너비에만 맞춰지도록 기준점 역할 */
+  .chip .chip-label {
+    display: inline-block;
+  }
+  .chip:hover { color: var(--dark-gray); }
+  .chip.active {
+    color: var(--black);
+    font-weight: 700;
+  }
+
+  /* 움직이는 언더라인 — JS가 active 탭의 "글자 부분" 너비/위치에 맞춰 갱신 */
+  .tab-indicator {
+    position: absolute;
+    bottom: 6px;                    /* 0 → 6px : 글자에 더 가깝게 */
+    left: 0;
+    height: 4px;                    /* 2px → 4px : 2배 굵게 */
+    background: var(--black);
+    border-radius: 2px;
+    transform: translateX(0);
+    width: 0;
+    transition: transform .28s cubic-bezier(.4, 0, .2, 1),
+                width .28s cubic-bezier(.4, 0, .2, 1);
+    pointer-events: none;
+  }
+
+  /* ============ 벤토 그리드 ============ */
+  .bento-section {
+    padding: 12px var(--edge) 40px;
+    max-width: 1280px;
+    margin: 0 auto;
+    /* 슬라이드 시 카드가 잠시 화면 밖으로 빠져도 가로 스크롤바가 생기지 않도록 잘라냄 */
+    overflow-x: clip;
+  }
+
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: var(--row-unit);
+    gap: var(--gap);
+    /* v07: 열/행 위치는 lib/bento.ts가 inline style로 지정 (벽돌 배치) */
+    /* 필터 전환 시 컨테이너 자체가 옆으로 밀려나는 모션 — 책장 통째 갈아끼우기 비유 */
+    transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.22s ease;
+    will-change: transform, opacity;
+  }
+  /* 슬라이드 OUT — 현재 카드들이 바깥쪽으로 밀려나가는 상태 */
+  #bento.slide-out-left  { transform: translateX(-8%); opacity: 0; }
+  #bento.slide-out-right { transform: translateX( 8%); opacity: 0; }
+  /* 슬라이드 IN 시작점 — 새 카드들이 반대편에서 들어올 출발 위치 (트랜지션 한 프레임 끔) */
+  #bento.slide-in-start-left  { transform: translateX(-8%); opacity: 0; transition: none; }
+  #bento.slide-in-start-right { transform: translateX( 8%); opacity: 0; transition: none; }
+
+  .cell {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.08);
+    outline: none;
+    /* 카드 전체 영역이 클릭 가능 — 자식 요소도 클릭을 가로채지 않음 */
+    pointer-events: auto;
+  }
+  /* 자식 요소는 클릭을 받지 않음 → 카드 가장자리/빈틈 없이 전 영역 hit */
+  .cell > * {
+    pointer-events: none;
+  }
+  .cell:focus-visible {
+    outline: 2px solid var(--orange);
+    outline-offset: 2px;
+  }
+  /* 텍스트도 드래그 선택 불가로 (클릭 시 text selection 방해 방지) */
+  .cell-sub, .cell-keyword { user-select: none; -webkit-user-select: none; }
+
+  /* 높이 시스템 — 5단계 (xs/s/m/l/xl) */
+
+  /* ===== 색상 변형 (4가지, 각 카드색에 짝지어진 글자색) =====
+     v-light  : light-gray 배경 + dark-gray 글자 (흰색 대신 기본 밝은 카드)
+     v-dark   : dark-gray 배경 + light-gray 글자
+     v-orange : orange 배경 + black 글자
+     v-black  : black 배경 + orange 글자 (유일하게 액센트색 글자)
+  */
+  .cell.v-light {
+    background: var(--light-gray);
+    color: var(--dark-gray);
+  }
+  .cell.v-dark {
+    background: var(--dark-gray);
+    color: var(--light-gray);
+  }
+  .cell.v-orange {
+    background: var(--orange);
+    color: var(--black);
+  }
+  .cell.v-black {
+    background: var(--black);
+    color: var(--orange);
+  }
+  /* v-blue: 체크용 마커 — 다른 탭에도 중복 노출되는 후기 표시 */
+  .cell.v-blue {
+    background: #2563eb;
+    color: #ffffff;
+  }
+
+  /* ===== 카드 내부: 레퍼런스 구조대로 요소 3개만 ===== */
+  /* 상단 영역: 좌측 작은 키워드 + 우측 화살표 */
+  .cell-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  /* 좌상단 작은 키워드 — 타입 라벨 */
+  .cell-sub {
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.3;
+    opacity: 0.55;
+    text-transform: uppercase;
+    font-feature-settings: "tnum";
+  }
+
+  /* 우상단 화살표 (↗) */
+  .cell-arrow {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    opacity: 0.7;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .cell:hover .cell-arrow { opacity: 1; transform: translate(1px, -1px); }
+
+  /* 좌하단 메인 키워드 — [깨지면 안 되는 공식들]
+     ① 모든 탭의 모든 카드 FS 동일 (전역 단일 값)
+     ② 좁은 화면에서 잘리지 않음 (제약 걸리면 FS가 그만큼 작아짐)
+     ③ 카드 내 좌측 하단 정렬 (margin-top:auto + align-items:flex-start)
+     ④ 긴 제목 후기는 render 단계에서 m+ 카드에 재배정 → 전역 FS를 refFS에 근접하게 유지
+     - 각 줄(.kw-line)은 nowrap 블록으로 자기 콘텐츠 폭만큼만 차지
+     - flex-column + align-items:flex-start: JS가 offsetWidth로 실제 폭 측정 가능 */
+  .cell-keyword {
+    font-family: var(--font-display-card);
+    font-weight: 700;
+    /* v04w10의 26px 를 상한으로, 뷰포트가 좁아지면 자동 축소 (clamp)
+       - 일반 모바일(≥383px): 26px 유지 (v04w10 감성 그대로)
+       - 좁은 뷰포트 (320/280/250): 6.8vw 비례로 축소 → 카드 잘림 방지
+       - 하한 14px: 아무리 좁아도 가독성 최소선 유지 */
+    font-size: clamp(14px, 6.8vw, 26px);
+    line-height: 1.2;            /* v04w10 값과 동일 */
+    letter-spacing: -0.03em;     /* 점프체는 각진 서체 — 기존 -0.055em은 과도, 완화 */
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;     /* 공식 ③: 좌측 정렬 */
+    margin-top: auto;            /* 공식 ③: 하단으로 밀기 */
+    /* fallback: JS가 동작 실패해도 최소한 줄바꿈은 유지 */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  .cell-keyword .kw-line {
+    display: block;
+    /* nowrap 제거 → titleBreaks의 줄바꿈은 "권장 기본 레이아웃"으로 두되,
+       특정 줄이 카드 폭을 넘으면 자연스럽게 2차 wrap 발생 → 가로 잘림 방지.
+       FS는 유지되고 줄바꿈만 유동적으로 늘어남. */
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  /* ============ 하단 룰 라인 ============ */
+  .bottomline {
+    height: 1px;
+    background: var(--black);
+    max-width: 1280px;
+    margin: 24px auto 0;
+  }
+  .footer-info {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 12px var(--edge);
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-60);
+    font-feature-settings: "tnum";
+  }
+
+  /* ============ 데스크탑 — 2열 고정, 모바일 비율 유지 ============ */
+  @media (min-width: 768px) {
+    :root {
+      --row-unit: 60px;        /* 50px → 60px : 카드 살짝 키움 */
+      --pad: 28px;             /* 24px → 28px : 카드 내부 여백도 확장 */
+      --edge: 28px;            /* PC 공통 좌우 패딩 — 한 줄로 모든 섹션 적용 */
+    }
+    /* 2열 고정 — 3열/4열 확장 안 함 */
+    .bento {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    /* PC에서는 메인 타이틀(3줄 카피) 폭에 맞춰 확장 */
+    body {
+      max-width: 720px;        /* 520px → 720px */
+      margin-left: auto;
+      margin-right: auto;
+    }
+    /* 키워드 크기 — 커진 카드에 맞춰 상향 */
+    .cell-keyword { font-size: 36px; line-height: 1.18; }
+    /* PC 언더라인 탭 — 글자 크기만 키움, 간격은 좁게 유지 */
+    .chip {
+      font-size: 20px;         /* PC에서 키움 */
+      padding: 14px 8px;       /* 18px → 8px : 간격 좁게 */
+      transition: color .18s ease, transform .12s ease;
+    }
+    .chip:hover:not(.active) {
+      transform: translateY(-1px);
+    }
+    /* PC에선 언더라인 살짝 더 두껍게 (2배 기조 유지) */
+    .tab-indicator {
+      height: 5px;             /* 3px → 5px */
+      bottom: 8px;             /* PC는 padding 여유분 있으니 살짝 위로 */
+    }
+  }
+
+  /* ============ 진입 애니메이션 — 클릭 차단 없는 방식 ============
+     이전엔 animation-fill-mode:both + from{opacity:0}이라 카드가 "보이지 않지만
+     자리는 차지"하는 시간이 있었고, PC에서 그 시간 동안 클릭이 어긋났음.
+     이제 애니메이션은 fade-in "효과"만 일시적으로 주고, 끝나면 기본 opacity:1로 복귀.
+     stagger delay는 JS에서 미리 cap된 값으로 --card-index를 주입. */
+  .cell {
+    animation: fade-in .35s ease;
+    animation-delay: calc(var(--card-index, 0) * 0.015s);
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  /* v04w30 — 재렌더(리사이즈/폰트로드 등) 시엔 fade-in 차단해 깜빡임 방지.
+     첫 페인트 + 탭 변경 시에만 fade-in 활성. */
+  #bento.no-anim .cell {
+    animation: none !important;
+  }
+
+  /* PC 휠 스크롤 방해 방지 — body 전체가 아니라 시트 열렸을 때만 contain 적용 */
+  body.sheet-open {
+    overscroll-behavior-y: contain;
+  }
+
+  /* hover 효과 — filter 대신 box-shadow + 미세한 translateY로
+     더 즉각적인 피드백. transform도 아주 작은 값이라 클릭 판정 영향 최소.
+     active 상태는 살짝 눌리는 느낌으로. */
+  @media (hover: hover) and (pointer: fine) {
+    .cell {
+      transition: box-shadow .16s ease, transform .12s ease;
+    }
+    .cell:hover {
+      box-shadow: 0 8px 28px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06);
+      transform: translateY(-2px);
+    }
+    .cell:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition-duration: .05s;
+    }
+    /* hover 시 화살표 애니메이션 강화 */
+    .cell:hover .cell-arrow {
+      opacity: 1;
+      transform: translate(2px, -2px);
+    }
+  }
+
+  /* reduced-motion 존중 */
+  @media (prefers-reduced-motion: reduce) {
+    .cell {
+      animation: none;
+      transition: none;
+      transform: none;
+    }
+  }
+
+  /* ============ Floating Card Modal (Glassmorphism) ============ */
+  /* 오버레이: 단순 어둡게만 (블러 없음) */
+  .sheet-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0);
+    transition: background .4s ease;
+  }
+  .sheet-overlay.open {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.35);
+  }
+
+  /* 시트: Glassmorphism card — 반투명 + 자체 블러 + 유리 테두리 */
+  .sheet {
+    position: fixed;
+    z-index: 101;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    top: auto;
+    max-height: calc(85vh - 24px);
+    /* 핵심: 반투명 배경 + 자체 블러 → 뒤 콘텐츠 색상이 번져 들어옴 */
+    background: rgba(240, 240, 240, 0.72);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(140%);
+    /* 유리 엣지 테두리 */
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 24px;
+    transform: translateY(calc(100% + 24px));
+    transition: transform .5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity .3s ease;
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
+    /* 넓고 부드러운 그림자 (레퍼런스처럼 spread 큰) */
+    box-shadow: 0 12px 60px rgba(0, 0, 0, 0.12),
+                0 4px 20px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);  /* 상단 내부 하이라이트 */
+    /* ★ 핵심 버그 수정: 닫힌 상태에서도 시트가 z-index 101로 떠 있기 때문에
+       PC에서(translate 위치가 화면 중앙에서 60px만 내려간 상태라) 투명하게
+       카드들 위를 덮어 마우스 이벤트를 가로채는 문제가 있었음.
+       닫힌 기본 상태에서는 pointer-events:none, 열렸을 때만 auto. */
+    pointer-events: none;
+  }
+  .sheet.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .sheet.dragging {
+    transition: none;
+  }
+
+  /* 데스크탑 */
+  @media (min-width: 768px) {
+    .sheet {
+      left: 50%;
+      right: auto;
+      bottom: auto;
+      top: 50%;
+      transform: translate(-50%, calc(-50% + 60px));
+      width: 520px;
+      max-width: calc(100vw - 48px);
+      max-height: 80vh;
+    }
+    .sheet.open {
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  /* 드래그 핸들 */
+  .sheet-handle {
+    flex-shrink: 0;
+    padding: 12px 0 4px;
+    display: flex;
+    justify-content: center;
+    cursor: grab;
+    touch-action: none;
+  }
+  .sheet-handle::before {
+    content: '';
+    width: 36px;
+    height: 4px;
+    background: var(--dark-gray);
+    opacity: 0.18;
+    border-radius: 2px;
+  }
+  @media (min-width: 768px) {
+    .sheet-handle { display: none; }
+  }
+
+  /* 닫기 버튼 — 글라스 위에서 잘 보이도록 */
+  .sheet-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.06);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    color: var(--dark-gray);
+    transition: background .2s;
+  }
+  .sheet-close:hover { background: rgba(0, 0, 0, 0.12); }
+  .sheet-close svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 시트 상단 (컴팩트 — 헤더 고정 영역 최소화) */
+  .sheet-header {
+    flex-shrink: 0;
+    padding: 16px 24px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .sheet-sub {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--dark-gray);
+    opacity: 0.7;
+    margin-bottom: 4px;       /* 12px → 4px: 태그와 타이틀 밀착 */
+  }
+  .sheet-title {
+    font-weight: 800;
+    font-size: 34px;           /* 17px → 34px (약 2배) */
+    letter-spacing: -0.035em;  /* 큰 글씨에서 자간 더 조임 */
+    line-height: 1.22;
+    color: var(--black);
+    /* 2줄까지 허용하고, 초과분은 말줄임 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* 헤드라인 영역 고정: 항상 2줄 높이 예약 (1줄 제목도 동일 높이) */
+    min-height: calc(1.22em * 2);
+  }
+  @media (min-width: 768px) {
+    .sheet-title {
+      font-size: 42px;          /* 21px → 42px (약 2배) */
+      min-height: calc(1.22em * 2);
+    }
+  }
+
+  /* 시트 본문 (스크롤 가능) */
+  .sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px 32px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Firefox: 얇은 스크롤바, 레일 투명 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.15) transparent;
+  }
+  /* Webkit (Chrome, Safari, Edge): thumb만 보이는 미니멀 스크롤 */
+  .sheet-body::-webkit-scrollbar {
+    width: 4px;
+  }
+  .sheet-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sheet-body::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.15);
+    border-radius: 4px;
+  }
+  .sheet-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.25);
+  }
+  .sheet-meta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+    font-size: 12px;
+    color: var(--dark-gray);
+    opacity: 0.6;
+    margin-bottom: 22px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    font-feature-settings: "tnum";
+  }
+  .sheet-meta .dot {
+    width: 3px;
+    height: 3px;
+    background: currentColor;
+    border-radius: 50%;
+  }
+  .sheet-meta .mask {
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  /* highlight 문장 — 제거 요청에 따라 숨김 처리 */
+  .sheet-highlight {
+    display: none !important;
+  }
+
+  /* 전체 리뷰 본문 */
+  .sheet-fulltext {
+    font-size: 16.5px;         /* 15px → 16.5px (모바일) */
+    line-height: 1.7;          /* 가독성 위해 줄간격도 소폭 증가 */
+    color: var(--dark-gray);
+    white-space: pre-line;
+  }
+  @media (min-width: 768px) {
+    .sheet-fulltext {
+      font-size: 18px;         /* PC에서 더 크게 */
+      line-height: 1.75;
+    }
+  }
+  .sheet-fulltext p {
+    margin-bottom: 12px;
+  }
+
+  /* 후기 본문 내 인라인 사진 */
+  .sheet-fulltext .review-photo {
+    display: block;
+    width: 100%;
+    max-width: 520px;
+    height: auto;
+    margin: 18px auto;
+    border-radius: 14px;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
+  }
+  @media (min-width: 768px) {
+    .sheet-fulltext .review-photo {
+      max-width: 580px;
+      margin: 22px auto;
+    }
+  }
+
+  /* body 스크롤 잠금 (시트 열렸을 때) */
+  body.sheet-open {
+    overflow: hidden;
+  }
+  /* 드래그 중 텍스트 선택 방지 */
+  body.sheet-dragging {
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: grabbing;
+  }
+
+  /* ============ 플로팅 CTA 버튼 스택 (원형, 우하단) ============ */
+  .cta-stack {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 800;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: opacity 0.25s ease;
+  }
+  .cta-float {
+    width: 94px;
+    height: 94px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-family: var(--font-display-hero);
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.15;
+    box-shadow: 0 10px 22px rgba(0,0,0,0.22), 0 4px 8px rgba(0,0,0,0.14);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    padding: 0;
+  }
+  .cta-float .cta-text {
+    font-size: 18px;
+    letter-spacing: 0;
+    display: block;
+  }
+  .cta-float .cta-apply {
+    display: inline-block;
+    font-size: 1.18em;
+  }
+  .cta-float:hover { transform: translateY(-2px); }
+  .cta-float:active { transform: translateY(0); }
+  /* 견적신청: 주황 그라데이션 */
+  .cta-quote { background: linear-gradient(135deg, #FF7A2D 0%, #FF5A1F 100%); box-shadow: 0 12px 26px rgba(255,90,31,0.38), 0 4px 10px rgba(0,0,0,0.18); }
+  .cta-quote:hover { box-shadow: 0 18px 32px rgba(255,90,31,0.46), 0 6px 14px rgba(0,0,0,0.2); }
+  /* 후기작성: 페이지 메인 블랙 */
+  .cta-review { background: var(--black); }
+  .cta-review:hover { background: #2a2a2a; }
+  /* 시트/모달 열렸을 땐 숨김 */
+  body.sheet-open .cta-stack, body.quote-open .cta-stack { opacity: 0; pointer-events: none; }
+  @media (min-width: 768px) {
+    .cta-stack { right: 28px; bottom: 28px; gap: 14px; }
+    .cta-float { width: 106px; height: 106px; }
+    .cta-float .cta-text { font-size: 21px; }
+  }
+
+  /* ============ 무료견적신청 모달 (Apple-style 다크) ============ */
+  .quote-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+  .quote-overlay.open { opacity: 1; pointer-events: auto; }
+  .quote-modal {
+    position: fixed; z-index: 1001; left: 50%; top: 50%;
+    transform: translate(-50%, -48%) scale(0.97);
+    width: min(520px, calc(100vw - 32px));
+    max-height: calc(100vh - 80px);
+    background: #1C1C1E; border-radius: 26px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.3);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0.16, 1), transform 0.35s cubic-bezier(0.32, 0.72, 0.16, 1);
+    display: flex; flex-direction: column; overflow: hidden;
+    color: #F2F2F7; font-family: var(--font-sans);
+    touch-action: pan-y; overscroll-behavior: contain;
+  }
+  .quote-modal.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+  .quote-header { padding: 28px 28px 16px; text-align: center; position: relative; }
+  .quote-header h2 { margin: 0 0 8px; font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.02em; line-height: 1.25; }
+  .quote-header p { margin: 0; font-size: 13px; color: rgba(235,235,245,0.6); line-height: 1.5; letter-spacing: -0.005em; }
+  .quote-badges { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; font-size: 12px; color: rgba(235,235,245,0.7); font-weight: 500; letter-spacing: -0.005em; }
+  .quote-badges .dot { color: rgba(235,235,245,0.3); font-weight: 400; }
+  .quote-close { position: absolute; top: 16px; right: 16px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(120,120,128,0.24); color: rgba(235,235,245,0.6); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+  .quote-close:hover { background: rgba(120,120,128,0.36); color: #fff; }
+  .quote-close svg { width: 12px; height: 12px; }
+  .quote-body { padding: 8px 20px 4px; overflow-y: auto; overflow-x: hidden; flex: 1; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; }
+  .quote-section { margin-bottom: 18px; background: rgba(118,118,128,0.12); border-radius: 16px; padding: 14px 16px; overflow: hidden; }
+  .quote-section-title { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; color: rgba(235,235,245,0.6); margin: 2px 2px 12px; padding: 0; border: none; text-transform: uppercase; letter-spacing: 0.04em; }
+  .quote-section-title .req-note { font-size: 11px; color: #FF7A2D; font-weight: 600; text-transform: none; letter-spacing: 0; }
+  .quote-field { margin-bottom: 10px; }
+  .quote-field:last-child { margin-bottom: 0; }
+  .quote-field label { display: block; font-size: 13px; font-weight: 500; color: rgba(235,235,245,0.85); margin-bottom: 6px; letter-spacing: -0.005em; }
+  .quote-field label .req { color: #FF7A2D; margin-left: 3px; font-weight: 600; }
+  .quote-field label .hint { font-size: 11.5px; font-weight: 400; color: rgba(235,235,245,0.45); margin-left: 6px; }
+  .quote-modal input[type="text"], .quote-modal input[type="tel"], .quote-modal input[type="date"], .quote-modal textarea {
+    width: 100%; padding: 13px 14px; background: rgba(118,118,128,0.18); border: 1.5px solid transparent; border-radius: 12px; color: #fff; font-size: 14px; font-family: inherit; box-sizing: border-box; outline: none; transition: border-color 0.18s, background 0.18s; letter-spacing: -0.005em;
+  }
+  .quote-modal input::placeholder, .quote-modal textarea::placeholder { color: rgba(235,235,245,0.35); }
+  .quote-modal input:focus, .quote-modal textarea:focus { border-color: #FF7A2D; background: rgba(118,118,128,0.28); }
+  .quote-modal input[readonly] { cursor: pointer; caret-color: transparent; }
+  .quote-modal input[readonly]:hover { background: rgba(118,118,128,0.26); }
+  .quote-modal input[type="date"] { cursor: pointer; color-scheme: dark; }
+  .postcode-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(0,0,0,0.58);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
+  }
+  .postcode-overlay.open { display: flex; }
+  .postcode-popup {
+    width: min(500px, 100%);
+    height: min(620px, calc(100vh - 36px));
+    overflow: hidden;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 30px 90px rgba(0,0,0,0.42);
+    display: flex;
+    flex-direction: column;
+  }
+  .postcode-popup-head {
+    height: 52px;
+    padding: 0 14px 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1C1C1E;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .postcode-popup-close {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.14);
+    color: #fff;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+  }
+  .postcode-popup-body { flex: 1; min-height: 0; }
+  .quote-input-with-icon { position: relative; }
+  .quote-input-with-icon .search-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 32px; border: none; background: rgba(255,122,45,0.18); border-radius: 9px; color: #FF7A2D; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .quote-input-with-icon .search-btn svg { width: 14px; height: 14px; }
+  .quote-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .quote-chip { position: relative; padding: 10px 16px; background: rgba(118,118,128,0.18); border: 1.5px solid transparent; border-radius: 999px; color: rgba(235,235,245,0.85); font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; transition: all 0.15s; letter-spacing: -0.005em; }
+  .quote-chip:hover { background: rgba(118,118,128,0.28); color: #fff; }
+  .quote-chip.active { background: rgba(255,122,45,0.18); border-color: #FF7A2D; color: #fff; }
+  .quote-chip { padding-right: 36px; } /* HOT 배지 자리 확보 — 칩 박스 안에서 끝나게 */
+  .quote-chip:not(:has(.hot-badge)) { padding-right: 16px; }
+  .quote-chip .hot-badge { position: absolute; top: 50%; right: 8px; transform: translateY(-50%); background: #FF3B30; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 5px; line-height: 1; letter-spacing: 0.02em; }
+  .quote-extra-toggle { width: 100%; padding: 13px; background: rgba(118,118,128,0.12); border: none; border-radius: 12px; color: rgba(235,235,245,0.7); font-size: 13.5px; font-weight: 500; font-family: inherit; cursor: pointer; margin-bottom: 16px; transition: all 0.15s; letter-spacing: -0.005em; }
+  .quote-extra-toggle:hover { background: rgba(118,118,128,0.2); color: #fff; }
+  .quote-extra-area { display: none; margin-bottom: 16px; }
+  .quote-extra-area.open { display: block; }
+  .quote-footer { padding: 12px 20px 20px; background: linear-gradient(to top, #1C1C1E 70%, rgba(28,28,30,0)); position: sticky; bottom: 0; }
+  .quote-submit { width: 100%; padding: 16px; background: linear-gradient(135deg, #FF7A2D 0%, #FF5A1F 100%); border: none; border-radius: 14px; color: #fff; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s; letter-spacing: -0.01em; }
+  .quote-submit:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(255,90,31,0.38); }
+  .quote-submit:active { transform: translateY(0); opacity: 0.92; }
+  body.quote-open { overflow: hidden; }
+
+  /* ============ 후기 작성 모달 (Apple-style 라이트) ============ */
+  .review-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.32); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+  .review-overlay.open { opacity: 1; pointer-events: auto; }
+  .review-modal {
+    position: fixed; z-index: 1001; left: 50%; top: 50%;
+    transform: translate(-50%, -48%) scale(0.97);
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 80px);
+    background: #F2F2F7;
+    border-radius: 26px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.28), 0 8px 24px rgba(0,0,0,0.12);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0.16, 1), transform 0.35s cubic-bezier(0.32, 0.72, 0.16, 1);
+    display: flex; flex-direction: column; overflow: hidden;
+    color: #1C1C1E; font-family: var(--font-sans);
+  }
+  .review-modal.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+  body.review-open { overflow: hidden; }
+  body.review-open .cta-stack { opacity: 0; pointer-events: none; }
+  .review-header { padding: 28px 28px 18px; position: relative; text-align: left; }
+  .review-header h2 { margin: 0 0 10px; font-size: 22px; font-weight: 700; color: #1C1C1E; letter-spacing: -0.02em; line-height: 1.28; }
+  .review-header p { margin: 4px 0; font-size: 13px; color: rgba(60,60,67,0.6); line-height: 1.5; font-weight: 500; letter-spacing: -0.005em; }
+  .review-close { position: absolute; top: 16px; right: 16px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(120,120,128,0.16); color: rgba(60,60,67,0.6); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+  .review-close:hover { background: rgba(120,120,128,0.28); color: #1C1C1E; }
+  .review-close svg { width: 12px; height: 12px; }
+  .review-body { padding: 6px 20px 4px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+  .review-body hr { display: none; }
+  .review-section { margin-bottom: 14px; background: #fff; border-radius: 16px; padding: 18px 18px; }
+  .review-section > label, .review-section > .review-q { display: block; font-size: 14px; font-weight: 600; color: #1C1C1E; margin-bottom: 12px; letter-spacing: -0.01em; }
+  .review-section .req { color: #FF7A2D; margin-left: 3px; font-weight: 700; }
+  .review-modal input[type="date"], .review-modal input[type="tel"], .review-modal input[type="text"] {
+    width: 100%; padding: 12px 14px; background: rgba(120,120,128,0.12); border: 1.5px solid transparent; border-radius: 12px; color: #1C1C1E; font-size: 14px; font-family: inherit; box-sizing: border-box; outline: none; transition: border-color 0.18s, background 0.18s; letter-spacing: -0.005em;
+  }
+  .review-modal input[type="date"]:focus, .review-modal input[type="tel"]:focus, .review-modal input[type="text"]:focus { border-color: #FF7A2D; background: #fff; }
+  .review-modal input[type="date"] { color-scheme: light; cursor: pointer; max-width: 230px; }
+  .review-modal input[type="tel"] { max-width: 320px; }
+  /* 이사 유형 칩 (단일선택) */
+  .review-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .review-chip {
+    padding: 10px 16px;
+    background: rgba(120,120,128,0.12);
+    border: 1.5px solid transparent;
+    border-radius: 999px;
+    color: #1C1C1E;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: -0.005em;
+  }
+  .review-chip .chip-letter {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    background: rgba(255,122,45,0.14);
+    color: #FF7A2D;
+    font-size: 11px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .review-chip:hover { background: rgba(120,120,128,0.2); }
+  .review-chip.active { background: rgba(255,122,45,0.12); border-color: #FF7A2D; color: #FF5A1F; }
+  /* 별점 (0.5 단위) — 회색 배경 별 위에 노랑 전경 별을 클립패스로 절반/전체 노출 */
+  .star-rating { display: inline-flex; gap: 6px; cursor: pointer; user-select: none; }
+  .star-wrap { position: relative; width: 36px; height: 36px; transition: transform 0.12s; }
+  .star-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .star-bg { color: rgba(120,120,128,0.28); }
+  .star-fg { color: #FFB800; clip-path: inset(0 100% 0 0); transition: clip-path 0.15s ease; }
+  .star-wrap.half .star-fg { clip-path: inset(0 50% 0 0); }
+  .star-wrap.full .star-fg { clip-path: inset(0 0 0 0); }
+  .star-wrap:hover { transform: scale(1.08); }
+  .rating-readout { display: inline-block; margin-left: 10px; font-size: 13px; font-weight: 600; color: #FF7A2D; vertical-align: middle; min-width: 28px; }
+  /* 후기 에디터 (contenteditable) */
+  .editor-wrap { background: rgba(120,120,128,0.08); border: 1.5px solid transparent; border-radius: 14px; transition: border-color 0.18s, background 0.18s; overflow: hidden; }
+  .editor-wrap:focus-within { border-color: #FF7A2D; background: #fff; }
+  .editor-toolbar { display: flex; gap: 6px; padding: 8px 10px; border-bottom: 1px solid rgba(60,60,67,0.08); background: transparent; }
+  .editor-tool {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 11px; background: rgba(120,120,128,0.12); border: none;
+    border-radius: 8px; color: #1C1C1E; font-size: 12px; font-weight: 500; font-family: inherit;
+    cursor: pointer; transition: all 0.15s; letter-spacing: -0.005em;
+  }
+  .editor-tool:hover { background: rgba(255,122,45,0.14); color: #FF5A1F; }
+  .editor-tool svg { width: 13px; height: 13px; }
+  .editor-tool .file-input { display: none; }
+  .editor {
+    padding: 14px 16px;
+    min-height: 220px;
+    max-height: 380px;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #1C1C1E;
+    outline: none;
+    -webkit-overflow-scrolling: touch;
+    background: transparent;
+    letter-spacing: -0.005em;
+  }
+  .editor:empty::before {
+    content: attr(data-placeholder);
+    color: rgba(60,60,67,0.35);
+    pointer-events: none;
+    white-space: pre-wrap;
+  }
+  .editor img {
+    max-width: 100%; height: auto;
+    border-radius: 10px;
+    margin: 10px 0;
+    display: block;
+  }
+  .editor-tip { margin: 8px 2px 0; font-size: 11.5px; color: rgba(60,60,67,0.5); letter-spacing: -0.005em; }
+  /* 닉네임 셔플 */
+  .nick-row { display: flex; gap: 8px; align-items: center; }
+  .nick-input { flex: 1; max-width: 280px; }
+  .nick-shuffle {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 12px 16px; background: #1C1C1E; color: #fff;
+    border: none; border-radius: 12px; font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: transform 0.15s, background 0.15s;
+    letter-spacing: -0.005em;
+  }
+  .nick-shuffle:hover { background: #2c2c2e; transform: translateY(-1px); }
+  .nick-shuffle:active { transform: translateY(0); }
+  .nick-shuffle svg { width: 14px; height: 14px; }
+  /* 제출 버튼 */
+  .review-body .review-divider { display: none; }
+  .review-footer { padding: 12px 20px 20px; background: linear-gradient(to top, #F2F2F7 70%, rgba(242,242,247,0)); position: sticky; bottom: 0; }
+  .review-submit {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%;
+    padding: 16px 22px; background: linear-gradient(135deg, #FF7A2D 0%, #FF5A1F 100%);
+    border: none; border-radius: 14px; color: #fff; font-size: 16px; font-weight: 700;
+    font-family: inherit; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    letter-spacing: -0.01em;
+  }
+  .review-submit:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(255,90,31,0.32); }
+  .review-submit:active { transform: translateY(0); opacity: 0.92; }
+  .review-phone-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .review-phone-row .phone-note { font-size: 11.5px; color: rgba(60,60,67,0.5); font-weight: 500; letter-spacing: -0.005em; }
+  /* 모바일에서도 windowed 카드 유지 (full-screen 전환 안 함) */
+  @media (max-width: 480px) {
+    .review-modal, .quote-modal { border-radius: 22px; }
+    .review-header h2, .quote-header h2 { font-size: 20px; }
+    .review-section { padding: 16px 14px; }
+    .quote-section { padding: 12px 14px; }
+  }
