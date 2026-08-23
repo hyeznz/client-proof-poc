@@ -2,8 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import { dateBlur, dateFocus } from "@/lib/dateInput";
 
-// 견적 접수용 Google Apps Script 엔드포인트 — .env.local 의 NEXT_PUBLIC_QUOTE_ENDPOINT
-const GOOGLE_SCRIPT_URL = process.env.NEXT_PUBLIC_QUOTE_ENDPOINT ?? "";
 const MOVE_TYPES = ["원룸이사", "포장이사", "안심포장이사", "보관이사", "사무실이사", "장거리이사", "기타"];
 const HOT = new Set(["안심포장이사", "보관이사"]);
 const TIMES: [string, string][] = [["오전", "오전 (9-12시)"], ["오후", "오후 (12-3시)"], ["저녁", "저녁 (3-6시)"], ["언제든", "언제든 가능"]];
@@ -116,8 +114,10 @@ export default function QuoteModal({ open, onClose }: Props) {
     };
     setSubmitting(true);
     try {
-      await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
-      alert("견적 신청이 접수되었습니다. 빠른 시일 내 연락드리겠습니다.");
+      // 서버(/api/quote)가 구글 시트 저장 + 접수 안내 문자 발송
+      const res = await fetch("/api/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error("quote failed");
+      alert("견적 신청이 접수되었습니다. 입력하신 번호로 접수 안내 문자를 보내드렸어요.");
       onClose();
       form.current?.reset();
       setTypes([]); setTime(""); setPhone(""); setFrom(""); setTo("");
