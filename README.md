@@ -8,7 +8,7 @@
 
 ## 바로 보기
 
-**[확인 필요: 라이브 링크]**
+**https://client-proof-poc.vercel.app**
 
 ## 이 페이지는
 
