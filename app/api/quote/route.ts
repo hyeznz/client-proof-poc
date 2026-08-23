@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendSms } from "@/lib/solapi";
+import { allow, clientIp } from "@/lib/rateLimit";
 
 // 견적 접수: ① Apps Script(구글 시트)로 전달 ② 고객 폰으로 접수 안내 문자.
 // 브라우저가 Apps Script를 직접 치던 걸 서버로 옮김 → URL이 클라이언트에 안 노출되고 응답도 읽을 수 있음.
@@ -10,6 +11,11 @@ export async function POST(request: Request) {
   const payload = await request.json();
   const phone: string = String(payload.phone ?? "").replace(/\D/g, "");
   if (!/^01\d{8,9}$/.test(phone)) return NextResponse.json({ error: "연락처 형식 오류" }, { status: 400 });
+
+  // 남용 방어: 같은 IP 1분 3회, 같은 번호 10분 1회. 초과 시 저장도 문자도 안 함.
+  if (!allow(`ip:${clientIp(request)}`, 3, 60_000) || !allow(`phone:${phone}`, 1, 10 * 60_000)) {
+    return NextResponse.json({ error: "잠시 후 다시 시도해주세요." }, { status: 429 });
+  }
 
   const endpoint = process.env.QUOTE_ENDPOINT;
   if (endpoint) {

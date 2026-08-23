@@ -116,6 +116,7 @@ export default function QuoteModal({ open, onClose }: Props) {
     try {
       // 서버(/api/quote)가 구글 시트 저장 + 접수 안내 문자 발송
       const res = await fetch("/api/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      if (res.status === 429) { alert("같은 번호로 이미 접수되었거나 요청이 너무 잦아요. 잠시 후 다시 시도해주세요."); return; }
       if (!res.ok) throw new Error("quote failed");
       alert("견적 신청이 접수되었습니다. 입력하신 번호로 접수 안내 문자를 보내드렸어요.");
       onClose();
